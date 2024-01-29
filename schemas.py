@@ -18,5 +18,5 @@ class RadioCodeSchema(Schema):
 
 class TrustPilotReviewsSchema(Schema):
     domeniu = fields.String(required=True)
-    toal_reviews = fields.Integer(dump_only=True)
+    total_reviews = fields.Integer(dump_only=True)
     reviews = fields.List(fields.Nested(ReviewSchema()), dump_only=True)

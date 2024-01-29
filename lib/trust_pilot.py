@@ -44,6 +44,6 @@ def get_trustpilot_reviews(domeniu):
     ]
     return {
         'domeniu': domeniu,
-        'toal_reviews': toal_reviews,
+        'total_reviews': toal_reviews,
         'reviews': reviews
     }
