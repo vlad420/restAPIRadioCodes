@@ -3,7 +3,7 @@ import re
 import requests
 
 
-def _extrat_version(sursa):
+def _extract_version(sursa):
     pattern = r"businessunitprofile-consumersite-([0-9]+\.[0-9]+\.[0-9]+)"
     match = re.search(pattern, sursa)
     if match:
@@ -41,7 +41,7 @@ def _get_trustpilot_api_version(domeniu):
 
     if response.status_code == 200:
         sursa = response.text
-        return _extrat_version(sursa)
+        return _extract_version(sursa)
     else:
         print("[-] Eroare la obținerea versiunii API-ului TrustPilot", response.status_code)
         raise Exception("Eroare la obținerea versiunii API-ului TrustPilot")
