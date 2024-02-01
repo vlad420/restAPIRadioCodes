@@ -2,7 +2,7 @@ import requests
 
 
 def _fetch_trustpilot_data(domeniu):
-    url = f"https://www.trustpilot.com/_next/data/businessunitprofile-consumersite-2.71.0/review/{domeniu}.json"
+    url = f"https://www.trustpilot.com/_next/data/businessunitprofile-consumersite-2.72.0/review/{domeniu}.json"
 
     querystring = {"businessUnit": domeniu}
 
