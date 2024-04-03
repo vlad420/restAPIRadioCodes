@@ -14,7 +14,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from lib.constants import APPIUM_SERVER_URL, TIMP_ASTEPTARE_IMPLICIT, CAPABILITIES, TIMP_ASTEPTARE_FEEDBACK_TOASTER, \
     TIMP_ASTEPTARE_EROARE_INPUT_VIN, TIMP_ASTEPTARE_COOLDOWN_ACTIUNE, TIMP_ASTEPTARE_DISPARITIE_TOASTER, \
     PACKAGE_NAME_DACIA, PACKAGE_NAME_RENAULT, TIMP_ASTEPTARE_DESCHIDERE_APLICATIE, TIMP_ASTEPTARE_ACTIVARE_APLICATIE
-from lib.utils import cauta_mesaj_eroare, verifica_aplicatie_deschisa
+from lib.utils import cauta_mesaj_eroare, verifica_aplicatie_deschisa, ensure_emulator_is_online
 
 
 class AndroidBot:
@@ -23,6 +23,7 @@ class AndroidBot:
             'renault': PACKAGE_NAME_RENAULT,
             'dacia': PACKAGE_NAME_DACIA
         }
+        ensure_emulator_is_online()
         print('[+] Inițializare driver...')
         self._driver = webdriver.Remote(APPIUM_SERVER_URL,
                                         options=UiAutomator2Options().load_capabilities(CAPABILITIES))
@@ -37,6 +38,7 @@ class AndroidBot:
         if marca not in self.aplicatii.keys():
             print(f'[-] Marca {marca} nu există')
             raise Exception(f'Marca {marca} nu există')
+
 
         self._asigura_activarea_aplicatiei(marca=marca)
 

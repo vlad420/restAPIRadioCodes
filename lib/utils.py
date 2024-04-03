@@ -1,9 +1,14 @@
 import json
+import shlex
 import subprocess
+import re
+import time
+import pygetwindow as gw
 
 from filelock import FileLock
 
-from lib.constants import ERORI, LOCK_PATH, FWUID_PATH
+from lib.constants import ERORI, LOCK_PATH, FWUID_PATH, APPIUM_ROOT_COMMAND, EMULATOR_PARTIAL_WINDOW_NAME, \
+    TIMP_ASTEPTARE_INCARCARE_EMULATOR, TIMP_ASTEPTARE_VERIFICARE_STATUS_EMULATR
 
 lock = FileLock(LOCK_PATH, timeout=10)
 
@@ -92,3 +97,120 @@ def obtine_noua_cheie(data):
     else:
         print("[-] Markerul 'Expected:' nu a fost găsit în mesajul de excepție.")
         raise Exception("Marker 'Expected:' not found in the exception message.")
+
+
+def _list_devices():
+    # Definește comanda completă, inclusiv calea către executabil și argumentele necesare
+    command = f"{APPIUM_ROOT_COMMAND} list"
+
+    # Rulează comanda și captează output-ul
+    process = subprocess.run(command, shell=True, text=True, capture_output=True)
+
+    # Verifică dacă există erori
+    if process.stderr:
+        print("[-] Eroare:", process.stderr)
+        raise Exception(
+            "Eroare la interogarea device-lor"
+        )
+    else:
+        # Afișează output-ul comenzi
+        return process.stdout
+
+
+def _extrage_uuid(output):
+    # Definim un pattern pentru UUID folosind expresii regulate
+    pattern_uuid = r'\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b'
+
+    # Căutăm toate potrivirile pattern-ului în output
+    uuids = re.findall(pattern_uuid, output, re.IGNORECASE)
+
+    return uuids[0]
+
+
+def _start_device(id):
+    # Definește comanda completă, inclusiv calea către executabil și argumentele necesare
+    command = f"{APPIUM_ROOT_COMMAND} start {id}"
+
+    # # Rulează comanda și captează output-ul
+    # process = subprocess.run(command, shell=True, text=True, capture_output=True)
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    # # Pentru a obține output-ul procesului după ce acesta s-a încheiat, poți folosi:
+    # stdout, stderr = process.communicate()
+    # print("Output:", stdout)
+    # print("Error:", stderr if stderr else "Niciun mesaj de eroare.")
+    #
+    # # Verifică dacă există erori
+    # if stderr:
+    #     print("Eroare:", process.stderr)
+    #     raise Exception("Nu s-a putut deschide emulatorul.")
+
+
+def _extrage_status_pentru_uuid(output, uuid_cautat):
+    # Definim un pattern care caută o linie întreagă care conține UUID-ul specificat
+    # Acest pattern extrage de asemenea și statusul de la începutul liniei
+    pattern_linie_cu_uuid = r'^\s*(\w+)\s*\|[^|]*\|[^|]*' + re.escape(uuid_cautat)
+
+    # Căutăm pattern-ul în output, folosind re.MULTILINE pentru a trata fiecare linie ca un început nou
+    potrivire = re.search(pattern_linie_cu_uuid, output, re.MULTILINE)
+
+    # Dacă găsim o potrivire, returnăm statusul; altfel, returnăm None
+    if potrivire:
+        return potrivire.group(1)
+    else:
+        return None
+
+
+def ensure_boot_is_complete():
+    command = shlex.split("adb shell 'while [[ $(getprop sys.boot_completed) -ne 1 ]]; do sleep 1; done;'")
+    process = subprocess.run(command, shell=True, text=True, capture_output=True)
+    # Verifică dacă există erori
+    if process.stderr:
+        print("[-] Eroare:", process.stderr)
+        raise Exception(
+            "Eroare la obtinerea statusului de boot a device-uli"
+        )
+    print(process.stdout)
+
+
+def ensure_emulator_is_online():
+    output = _list_devices()
+    _id = _extrage_uuid(output)
+    status = _extrage_status_pentru_uuid(output, _id)
+    if status == "Off":
+        print("[+] Emulatorul este inchis, se deschide....")
+        _start_device(_id)
+        while True:
+            output = _list_devices()
+            # _id = _extrage_uuid(output)
+            status = _extrage_status_pentru_uuid(output, _id)
+            if status == "On":
+                while True:
+                    if _is_window_open(EMULATOR_PARTIAL_WINDOW_NAME):
+                        print("[+] Emulatorul s-a deschis")
+                        break
+                    time.sleep(TIMP_ASTEPTARE_VERIFICARE_STATUS_EMULATR)
+                print(f"[+] Se asteapta completare boot emulator")
+                time.sleep(TIMP_ASTEPTARE_INCARCARE_EMULATOR)
+                ensure_boot_is_complete()
+                break
+
+            time.sleep(TIMP_ASTEPTARE_VERIFICARE_STATUS_EMULATR)
+        print("[+] Emulatorul este pregatit pentru utilizare")
+    elif status == "On":
+        print("[+] Emulatorul este deschis")
+
+    else:
+        print(status)
+
+
+def _is_window_open(window_name):
+
+    # Obține o listă cu toate ferestrele deschise
+    ferestre = gw.getWindowsWithTitle(window_name)
+
+    # Verifică dacă lista obținută este goală
+    if not ferestre:
+        return False
+    else:
+        return True
