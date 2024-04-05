@@ -8,7 +8,8 @@ import pygetwindow as gw
 from filelock import FileLock
 
 from lib.constants import ERORI, LOCK_PATH, FWUID_PATH, APPIUM_ROOT_COMMAND, EMULATOR_PARTIAL_WINDOW_NAME, \
-    TIMP_ASTEPTARE_INCARCARE_EMULATOR, TIMP_ASTEPTARE_VERIFICARE_STATUS_EMULATR
+    TIMP_ASTEPTARE_INCARCARE_EMULATOR, TIMP_ASTEPTARE_VERIFICARE_STATUS_EMULATR, TIME_OUT_START_EMULATOR, \
+    TIME_ASTEPTARE_FEREASTRA_START_EMULATOR, EMULATOR_STARTIGN_WINDOW_NAME
 
 lock = FileLock(LOCK_PATH, timeout=10)
 
@@ -170,7 +171,7 @@ def ensure_boot_is_complete():
         raise Exception(
             "Eroare la obtinerea statusului de boot a device-uli"
         )
-    print(process.stdout)
+    # print(process.stdout)
 
 
 def ensure_emulator_is_online():
@@ -180,6 +181,9 @@ def ensure_emulator_is_online():
     if status == "Off":
         print("[+] Emulatorul este inchis, se deschide....")
         _start_device(_id)
+        while not _ensure_emulator_starting_window_appears():
+            _start_device(_id)
+        print("[+] Se asteapta descarcarea emulatorului")
         while True:
             output = _list_devices()
             # _id = _extrage_uuid(output)
@@ -199,13 +203,12 @@ def ensure_emulator_is_online():
         print("[+] Emulatorul este pregatit pentru utilizare")
     elif status == "On":
         print("[+] Emulatorul este deschis")
-
     else:
         print(status)
+        raise Exception("Statusul emulatorului nu este cunoscut")
 
 
 def _is_window_open(window_name):
-
     # Obține o listă cu toate ferestrele deschise
     ferestre = gw.getWindowsWithTitle(window_name)
 
@@ -214,3 +217,16 @@ def _is_window_open(window_name):
         return False
     else:
         return True
+
+
+def _ensure_emulator_starting_window_appears():
+    start_time = time.time()
+    while True:
+        if _is_window_open(EMULATOR_STARTIGN_WINDOW_NAME):
+            print("[+] Ferestra de start a emulatorului detectată")
+            return True
+        time.sleep(TIMP_ASTEPTARE_VERIFICARE_STATUS_EMULATR)
+
+        if time.time() - start_time > TIME_OUT_START_EMULATOR:
+            print("[-] Nu s-a detectat fereastra de start a emulatorului")
+            return False
