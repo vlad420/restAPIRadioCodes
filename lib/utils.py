@@ -225,7 +225,7 @@ def _ensure_emulator_starting_window_appears():
         if _is_window_open(EMULATOR_STARTIGN_WINDOW_NAME):
             print("[+] Ferestra de start a emulatorului detectată")
             return True
-        time.sleep(TIMP_ASTEPTARE_VERIFICARE_STATUS_EMULATR)
+        time.sleep(TIME_ASTEPTARE_FEREASTRA_START_EMULATOR)
 
         if time.time() - start_time > TIME_OUT_START_EMULATOR:
             print("[-] Nu s-a detectat fereastra de start a emulatorului")
