@@ -183,7 +183,7 @@ def ensure_emulator_is_online():
         _start_device(_id)
         while not _ensure_emulator_starting_window_appears():
             _start_device(_id)
-        print("[+] Se asteapta descarcarea emulatorului")
+        print("[+] Se asteapta deschiderea emulatorului")
         while True:
             output = _list_devices()
             # _id = _extrage_uuid(output)
